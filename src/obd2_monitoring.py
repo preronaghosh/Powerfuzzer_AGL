@@ -1,10 +1,7 @@
 import socket
 import struct
-import array
 import kuksa_viss_client
 import can
-import cantools
-import json
 
 
 def process_can_message(msg):
@@ -27,7 +24,7 @@ def main():
     client.authorize("/usr/lib/python3.10/site-packages/kuksa_certificates/jwt/super-admin.json.token") #TODO: confirm if this is needed?
     print("Kuksa Client init... done!")
 
-    v_temp = 65.0
+    # v_temp = 65.0
 
     try:
         s.bind(('can0',))
@@ -41,6 +38,12 @@ def main():
     while True:
         try:
             frame = s.recv(16)  
+            
+        except KeyboardInterrupt:
+            print("User interrupted program..")
+            client.stop()
+            return 1
+            
         except OSError as e:
             print(f"Read error: {e}")
             return 1
@@ -60,18 +63,28 @@ def main():
 
         # Call the message processing function
         process_can_message(msg)
-
-        if can_id == 0x88FE6EFE:
-            print("VehicleSpeed: {}".format(v_temp))
-            client.setValue("Vehicle.Speed", str(v_temp))
-            v_temp += 10
+        
+        pgn_id = (can_id >> 8) & 0xFFFF
+        can_id_data = can_id & 0xFF
+        
+        if pgn_id == 0xFEF1:
+            print("VehicleSpeed: {}".format(can_id_data))
+            client.setValue("Vehicle.Speed", str(can_id_data))
+            # v_temp += 10
+            
+        if pgn_id == 0xFFFF: # update PGN_ID for RPM
+            print("RPM: {}".format(can_id_data))
+            client.setValue("Vehicle.Powertrain.CombustionEngine.Speed", str(can_id_data))
 
         print(f"Arbitration ID received: {msg.arbitration_id}")
 
 
         print("-------------------------------------------------------------------")
-
-    client.stop()
+        
+        if KeyboardInterrupt:
+            print("User interrupted program..")
+            client.stop()
+            return 1
 
 
 if __name__ == "__main__":

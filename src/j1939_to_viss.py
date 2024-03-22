@@ -46,6 +46,11 @@ def main():
     while (1):
         try:
             frame = s.recv(64)  
+            
+        except KeyboardInterrupt:
+            client.stop()
+            return 0
+        
         except OSError as e:
             print(f"Read error: {e}")
             return 1
