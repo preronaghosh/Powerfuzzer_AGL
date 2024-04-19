@@ -21,13 +21,13 @@ def main():
 
     client = kuksa_viss_client.KuksaClientThread(config={})
     client.start()
-    client.authorize("/usr/lib/python3.10/site-packages/kuksa_certificates/jwt/super-admin.json.token") #TODO: confirm if this is needed?
+    client.authorize("/usr/lib/python3.10/site-packages/kuksa_certificates/jwt/super-admin.json.token") 
     print("Kuksa Client init... done!")
 
     v_temp = 65.0
 
     try:
-        s.bind(('can0',))
+        s.bind(('can0',)) # bitrate of 250000 needed for AGL in truck
     except OSError as e:
         print(f"Bind error: {e}")
         return 1
@@ -60,20 +60,23 @@ def main():
             is_extended_id=True  # Assuming standard CAN frames
         )
 
-
         # Call the message processing function
         process_can_message(msg)
         
         pgn_id = (can_id >> 8) & 0xFFFF
-        
         # Extract data from can and set dashboard signals to that 
+        
+        if can_id == 0x80FEF100:
+            print("VehicleSpeed: {}".format(v_temp))
+            client.setValue("Vehicle.Speed", str(v_temp))
+            v_temp += 10
         
         if pgn_id == 0xFEF1:
             print("VehicleSpeed: {}".format(v_temp))
             client.setValue("Vehicle.Speed", str(v_temp))
             v_temp += 10
             
-        if pgn_id == 0xFFFF: # update PGN_ID for RPM
+        if pgn_id == 0xFEF1: # update PGN_ID for RPM
             print("RPM: {}".format(3500)) # random value
             client.setValue("Vehicle.Powertrain.CombustionEngine.Speed", str(3500))
 
