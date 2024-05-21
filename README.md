@@ -9,4 +9,3 @@ quantitatively evaluate research results.
 # Documentation
 
 For detailed documentation and tutorials, check the wiki.
-```
